@@ -15,6 +15,7 @@ import {
 } from './misc';
 import { BASE_URL, CONFIG_DEFAULT, isDev } from '../Config';
 import { matchPath, useLocation, useNavigate } from 'react-router';
+import { fetchPatientData } from './patientData';
 
 interface AppContextValue {
   // conversations and messages
@@ -135,6 +136,7 @@ export const AppContextProvider = ({
     leafNodeId: Message['id'],
     onChunk: CallbackGeneratedChunk
   ) => {
+    console.log('generateMessage called with convId:', convId); // Debug log
     if (isGenerating(convId)) return;
 
     const config = StorageUtils.getConfig();
@@ -169,13 +171,22 @@ export const AppContextProvider = ({
     setPending(convId, pendingMsg);
 
     try {
+      // Fetch patient data from the API
+      console.log('Calling fetchPatientData...'); // Debug log
+      const patientData = await fetchPatientData('http://161.97.165.193:19000/api/data/1');
+      console.log('Patient data fetched:', patientData); // Debug log
+      
+      // Dynamically append patient data to the system message
+      const dynamicSystemMessage = `${config.systemMessage}\n\nDonnées du patient:\n${patientData}`;
+      console.log('Dynamic system message:', dynamicSystemMessage); // Debug log
       // prepare messages for API
       let messages: APIMessage[] = [
-        ...(config.systemMessage.length === 0
+        ...(dynamicSystemMessage.length === 0
           ? []
-          : [{ role: 'system', content: config.systemMessage } as APIMessage]),
+          : [{ role: 'system', content: dynamicSystemMessage} as APIMessage]),
         ...normalizeMsgsForAPI(currMessages),
       ];
+      console.log('Prepared messages:', messages); // Debug log
       if (config.excludeThoughtOnReq) {
         messages = filterThoughtFromMsgs(messages);
       }

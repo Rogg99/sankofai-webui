@@ -268,10 +268,11 @@ export default function SettingDialog({
   const { config, saveConfig } = useAppContext();
   const [sectionIdx, setSectionIdx] = useState(0);
 
-  // clone the config object to prevent direct mutation
+
+    // clone the config object to prevent direct mutation
   const [localConfig, setLocalConfig] = useState<typeof CONFIG_DEFAULT>(
     JSON.parse(JSON.stringify(config))
-  );
+    );
 
   const resetConfig = () => {
     if (window.confirm('Are you sure you want to reset all settings?')) {
