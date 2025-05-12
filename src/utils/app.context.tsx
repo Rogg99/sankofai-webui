@@ -15,7 +15,6 @@ import {
 } from './misc';
 import { BASE_URL, CONFIG_DEFAULT, isDev } from '../Config';
 import { matchPath, useLocation, useNavigate } from 'react-router';
-import { fetchPatientData } from './patientData';
 
 interface AppContextValue {
   // conversations and messages
@@ -86,6 +85,44 @@ export const AppContextProvider = ({
   const [canvasData, setCanvasData] = useState<CanvasData | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
+  const [initPatientDatas, setInitPatientDatas] = useState(false);
+
+  const saveConfig = (config: typeof CONFIG_DEFAULT) => {
+    StorageUtils.setConfig(config);
+    setConfig(config);
+  };
+
+  var dynamicSystemMessage = `${config.systemMessage}`;
+
+  if (!initPatientDatas) {
+  // Fetch patient data from the API
+    console.log('Fetching patient data...'); // Debug log
+    var patientData = '';
+    fetch('http://161.97.165.193:19000/api/data/1').then((response) => {
+      if (response.ok) {
+        var responseJson = response.json();
+        responseJson.then((data) => {
+          console.log('Fetched patient data:', data); // Debug log
+          patientData = JSON.stringify(data, null, 2);
+          console.log('Patient data:', patientData); // Debug log
+          // console.log('Patient data fetched:', patientData); // Debug log
+          // Dynamically append patient data to the system message
+          dynamicSystemMessage = `${config.systemMessage}\n\nDonnées du patient:\n${patientData}`;
+          config.systemMessage = dynamicSystemMessage;
+          saveConfig(config);
+          setInitPatientDatas(true);
+        });
+      }
+      else {
+        console.error('Error fetching patient data:', response.statusText);
+      }
+
+    });
+    // then((data) => {
+    //   patientData = data;
+    // });
+  }
+
   // handle change when the convId from URL is changed
   useEffect(() => {
     // also reset the canvas data
@@ -131,6 +168,8 @@ export const AppContextProvider = ({
 
   const isGenerating = (convId: string) => !!pendingMessages[convId];
 
+
+
   const generateMessage = async (
     convId: string,
     leafNodeId: Message['id'],
@@ -171,13 +210,11 @@ export const AppContextProvider = ({
     setPending(convId, pendingMsg);
 
     try {
-      // Fetch patient data from the API
-      console.log('Calling fetchPatientData...'); // Debug log
-      const patientData = await fetchPatientData('http://161.97.165.193:19000/api/data/1');
-      console.log('Patient data fetched:', patientData); // Debug log
-      
       // Dynamically append patient data to the system message
-      const dynamicSystemMessage = `${config.systemMessage}\n\nDonnées du patient:\n${patientData}`;
+      // const dynamicSystemMessage = `${config.systemMessage}\n\n Données du patient:\n${patientData}`;
+      config.systemMessage = dynamicSystemMessage;
+      saveConfig(config);
+
       console.log('Dynamic system message:', dynamicSystemMessage); // Debug log
       // prepare messages for API
       let messages: APIMessage[] = [
@@ -366,11 +403,6 @@ export const AppContextProvider = ({
     onChunk(parentNodeId);
 
     await generateMessage(convId, parentNodeId, onChunk);
-  };
-
-  const saveConfig = (config: typeof CONFIG_DEFAULT) => {
-    StorageUtils.setConfig(config);
-    setConfig(config);
   };
 
   return (

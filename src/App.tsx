@@ -24,6 +24,7 @@ function App() {
 
 function AppLayout() {
   const { showSettings, setShowSettings } = useAppContext();
+    
   return (
     <>
       <Sidebar />

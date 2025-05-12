@@ -1,3 +1,4 @@
+// import { BASE_URL, CONFIG_DEFAULT, isDev } from './Config';
 // src/utils/patientData.ts
 export async function fetchPatientData(apiUrl: string): Promise<string> {
     console.log('Fetching patient data from:', apiUrl); // Debug log
@@ -8,6 +9,11 @@ export async function fetchPatientData(apiUrl: string): Promise<string> {
       }
       const json = await response.json();
       const data = json?.data;
+      
+      
+      // Dynamically append patient data to the system message
+      // const dynamicSystemMessage = `${config.systemMessage}\n\nDonnées du patient:\n${patientData}`;console.log('Patient data fetched:', patientData); // Debug log
+      
   
       if (!data) {
         throw new Error('Invalid patient data format');
