@@ -18,7 +18,8 @@ export const CONFIG_DEFAULT = {
   + "\n- Fournissez des diagnostics précis et des suggestions pour de bonnes habitudes, des médicaments ou des lignes directrices."
   + "\n- Concentrez-vous toujours sur les faits et évitez les répétitions."
   + "\n- Répondez uniquement en français."
-  + "\n\nInformations sur le patient :",
+  + "\n\n- #################### \n",
+
   showTokensPerSecond: false,
   showThoughtInProgress: false,
   excludeThoughtOnReq: true,

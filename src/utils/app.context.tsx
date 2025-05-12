@@ -102,14 +102,16 @@ export const AppContextProvider = ({
       if (response.ok) {
         var responseJson = response.json();
         responseJson.then((data) => {
-          console.log('Fetched patient data:', data); // Debug log
-          patientData = JSON.stringify(data, null, 2);
+          console.log('Fetched patient data:', data.data); // Debug log
+          patientData = JSON.stringify(data.data, null, 2);
           console.log('Patient data:', patientData); // Debug log
           // console.log('Patient data fetched:', patientData); // Debug log
           // Dynamically append patient data to the system message
-          dynamicSystemMessage = `${config.systemMessage}\n\nDonnées du patient:\n${patientData}`;
+          var systemMessage = CONFIG_DEFAULT.systemMessage; 
+          dynamicSystemMessage = `${systemMessage}\n\nDonnées du patient:\n${patientData}`;
           config.systemMessage = dynamicSystemMessage;
           saveConfig(config);
+          setConfig(config);
           setInitPatientDatas(true);
         });
       }
@@ -137,6 +139,10 @@ export const AppContextProvider = ({
       StorageUtils.offConversationChanged(handleConversationChange);
     };
   }, [convId]);
+
+  useEffect(() => {
+
+  },[initPatientDatas])
 
   const setPending = (convId: string, pendingMsg: PendingMessage | null) => {
     // if pendingMsg is null, remove the key from the object
