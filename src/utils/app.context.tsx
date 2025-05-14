@@ -69,6 +69,7 @@ export const AppContextProvider = ({
 }: {
   children: React.ReactElement;
 }) => {
+  // const { patient } = useParams<Params>();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const params = matchPath('/chat/:convId', pathname);
@@ -87,6 +88,13 @@ export const AppContextProvider = ({
 
   const [initPatientDatas, setInitPatientDatas] = useState(false);
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const patientId  = searchParams.get("patient");
+  const doctorId  = searchParams.get("client");
+  console.log("patientId:", patientId);
+  console.log("doctorId:", doctorId);
+  console.log("window.location.href:", window.location.href);
+
   const saveConfig = (config: typeof CONFIG_DEFAULT) => {
     StorageUtils.setConfig(config);
     setConfig(config);
@@ -94,36 +102,11 @@ export const AppContextProvider = ({
 
   var dynamicSystemMessage = `${config.systemMessage}`;
 
-  if (!initPatientDatas) {
-  // Fetch patient data from the API
-    console.log('Fetching patient data...'); // Debug log
-    var patientData = '';
-    fetch('http://161.97.165.193:19000/api/data/1').then((response) => {
-      if (response.ok) {
-        var responseJson = response.json();
-        responseJson.then((data) => {
-          console.log('Fetched patient data:', data.data); // Debug log
-          patientData = JSON.stringify(data.data, null, 2);
-          console.log('Patient data:', patientData); // Debug log
-          // console.log('Patient data fetched:', patientData); // Debug log
-          // Dynamically append patient data to the system message
-          var systemMessage = CONFIG_DEFAULT.systemMessage; 
-          dynamicSystemMessage = `${systemMessage}\n\nDonnées du patient:\n${patientData}`;
-          config.systemMessage = dynamicSystemMessage;
-          saveConfig(config);
-          setConfig(config);
-          setInitPatientDatas(true);
-        });
-      }
-      else {
-        console.error('Error fetching patient data:', response.statusText);
-      }
-
-    });
-    // then((data) => {
-    //   patientData = data;
-    // });
-  }
+  // useEffect(() => {
+  //   if (patient) {
+  //     setInitPatientDatas(false);
+  //   }
+  // }, [patient]);
 
   // handle change when the convId from URL is changed
   useEffect(() => {
@@ -142,6 +125,73 @@ export const AppContextProvider = ({
 
   useEffect(() => {
 
+    // console.log("patientId:", patientId); // "summary"
+    if (!initPatientDatas) {
+    // Fetch patient data from the API
+      console.log('Fetching patient data...'); // Debug log
+      var patientData = '';
+      var doctorName = '';
+      var doctorSpeciality = 'generalist';
+      
+      const systemMessage_core = "Vous êtes Sankof, un assistant médical expert interactif. Suivez rigoureusement ces instructions :"
+      + "\n- Résumez les informations du patient fournies ci-dessous."
+      + "\n- Soyez interactif et posez des questions pour recueillir plus de détails sur l'état du patient."
+      + "\n- Fournissez des diagnostics précis et des suggestions pour de bonnes habitudes, des médicaments ou des lignes directrices."
+      + "\n- Concentrez-vous toujours sur les faits et évitez les répétitions."
+      + "\n- Répondez uniquement en français."
+      + "\n\n- #################### \n";
+
+      var doctor_core = 
+        "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
+      + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
+      + "\n\n- #################### \n";
+
+      var systemMessage = CONFIG_DEFAULT.systemMessage; 
+
+      fetch('http://161.97.165.193:19000/api/data/'+patientId).then((response) => {
+        if (response.ok) {
+          var responseJson = response.json();
+          responseJson.then((data) => {
+            console.log('Fetched patient data:', data); // Debug log
+            patientData = JSON.stringify(data.data, null, 2);
+            console.log('Patient data:', patientData); // Debug log
+            // console.log('Patient data fetched:', patientData); // Debug log
+            // Dynamically append patient data to the system message
+            dynamicSystemMessage = `${systemMessage}\n\nDonnées du patient:\n${patientData}`;
+            config.systemMessage = dynamicSystemMessage;
+            saveConfig(config);
+            setConfig(config);
+            
+            fetch('http://161.97.165.193:19000/api/data/doctor/'+doctorId).then((response) => {
+              if (response.ok) {
+                var responseJson = response.json();
+                responseJson.then((data) => {
+                  console.log('Fetched doctor data:', data); // Debug log
+                  doctorName = data.data.name;
+                  doctorSpeciality = data.data.speciality;
+                  var doctor_core = 
+                  "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
+                  + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
+                  + "\n\n- #################### \n";
+                  // Dynamically append doctor data to the system message
+                  dynamicSystemMessage = `${systemMessage_core}${doctor_core}\n\nDonnées du patient:\n${patientData}`;
+                  config.systemMessage = dynamicSystemMessage;
+                  saveConfig(config);
+                  setConfig(config);
+                  setInitPatientDatas(true);
+                });
+              }
+              else {
+                console.error('Error fetching patient data:', response.statusText);
+              }
+            });
+          });
+        }
+        else {
+          console.error('Error fetching patient data:', response.statusText);
+        }
+      });
+    }
   },[initPatientDatas])
 
   const setPending = (convId: string, pendingMsg: PendingMessage | null) => {
