@@ -155,36 +155,27 @@ export const AppContextProvider = ({
             console.log('Fetched patient data:', data); // Debug log
             patientData = JSON.stringify(data.data, null, 2);
             console.log('Patient data:', patientData); // Debug log
-            // console.log('Patient data fetched:', patientData); // Debug log
-            // Dynamically append patient data to the system message
-            dynamicSystemMessage = `${systemMessage}\n\nDonnées du patient:\n${patientData}`;
-            config.systemMessage = dynamicSystemMessage;
-            saveConfig(config);
-            setConfig(config);
-            
-            fetch('http://161.97.165.193:19000/api/data/doctor/'+doctorId).then((response) => {
-              if (response.ok) {
-                var responseJson = response.json();
-                responseJson.then((data) => {
-                  console.log('Fetched doctor data:', data); // Debug log
-                  doctorName = data.data.name;
-                  doctorSpeciality = data.data.speciality;
-                  var doctor_core = 
+
+            console.log('Fetched doctor data:', data); // Debug log
+            doctorName = data.specialist.name;
+            doctorSpeciality = data.specialist.speciality;
+
+            var doctor_core = 
                   "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
                   + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
                   + "\n\n- #################### \n";
-                  // Dynamically append doctor data to the system message
-                  dynamicSystemMessage = `${systemMessage_core}${doctor_core}\n\nDonnées du patient:\n${patientData}`;
-                  config.systemMessage = dynamicSystemMessage;
-                  saveConfig(config);
-                  setConfig(config);
-                  setInitPatientDatas(true);
-                });
-              }
-              else {
-                console.error('Error fetching patient data:', response.statusText);
-              }
-            });
+
+            // Dynamically append doctor data to the system message
+            dynamicSystemMessage = `${systemMessage_core}\n\nDonnées du patient:\n${patientData}\nDonnées du médecin:\n${doctor_core}`;
+            config.systemMessage = dynamicSystemMessage;
+
+            // console.log('Patient data fetched:', patientData); // Debug log
+            // Dynamically append patient data to the system message
+            //dynamicSystemMessage = `${systemMessage}\n\nDonnées du patient:\n${patientData}\n\nDonnées du médecin:\n${doctor_core}`;
+            //config.systemMessage = dynamicSystemMessage;
+            saveConfig(config);
+            setConfig(config);
+            
           });
         }
         else {
