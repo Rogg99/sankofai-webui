@@ -157,6 +157,32 @@ export default function ChatScreen() {
     clearExtraContext();
   };
 
+  const sendFisrtMessage = async () => {
+    const lastInpMsg = "- Fais un resumé des informations du patient fournies ci-dessous. "
+    + " - et donne le resultat sous la forme : Bienvenu(e) Docteur ...., Je vais vous aider à effectuer un diagnostic médical sur le patient ... agé de ... ans, avec un historique presentant .... .";
+    if (lastInpMsg.trim().length === 0 || isGenerating(currConvId ?? ''))
+      return;
+    textarea.setValue('');
+    scrollToBottom(false);
+    setCurrNodeId(-1);
+    // get the last message node
+    const lastMsgNodeId = messages.at(-1)?.msg.id ?? null;
+    if (
+      !(await sendMessage(
+        currConvId,
+        lastMsgNodeId,
+        lastInpMsg,
+        currExtra,
+        onChunk
+      ))
+    ) {
+      // restore the input message if failed
+      textarea.setValue(lastInpMsg);
+    }
+    // OK
+    clearExtraContext();
+  };
+
   const handleEditMessage = async (msg: Message, content: string) => {
     if (!viewingChat) return;
     setCurrNodeId(msg.id);
@@ -215,6 +241,15 @@ export default function ChatScreen() {
     // no need to keep track of sendNewMessage
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textarea.ref]);
+
+  // ask the model to generate the first message on page loaded or refreshed
+  // this is a workaround to avoid the model to generate the first message when the page is refreshed
+
+  useEffect(() => {
+    if (messages.length === 0 && !isGenerating(currConvId ?? '')) {
+      sendFisrtMessage();
+    }
+  }, []);
 
   // due to some timing issues of StorageUtils.appendMsg(), we need to make sure the pendingMsg is not duplicated upon rendering (i.e. appears once in the saved conversation and once in the pendingMsg)
   const pendingMsgDisplay: MessageDisplay[] =
