@@ -158,10 +158,13 @@ export default function ChatScreen() {
   };
 
   const sendFisrtMessage = async () => {
-    const lastInpMsg = "- Fais un resumé des informations du patient fournies ci-dessous. "
-    + " - et donne le resultat sous la forme : Bienvenu(e) Docteur ...., Je vais vous aider à effectuer un diagnostic médical sur le patient ... agé de ... ans, avec un historique presentant .... .";
+    var config = StorageUtils.getConfig();
+    const lastInpMsg = "- Fais un resumé des informations du patient fournies ci-dessous : \n " + config.systemMessage 
+    + "\n - et donne le resultat sous la forme : Bienvenu(e) Docteur ...., Je vais vous aider à effectuer un diagnostic médical sur le patient ... agé de ... ans, avec un historique presentant .... .";
+    
     if (lastInpMsg.trim().length === 0 || isGenerating(currConvId ?? ''))
       return;
+    
     textarea.setValue('');
     scrollToBottom(false);
     setCurrNodeId(-1);
