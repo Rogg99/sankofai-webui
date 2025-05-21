@@ -305,7 +305,8 @@ export const AppContextProvider = ({
       };
 
       // send request
-      const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
+      // const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
+      const fetchResponse = await fetch(`http://161.97.165.193:9870/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

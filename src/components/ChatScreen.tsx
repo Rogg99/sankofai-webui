@@ -178,10 +178,7 @@ export default function ChatScreen() {
         currExtra,
         onChunk
       ))
-    ) {
-      // restore the input message if failed
-      textarea.setValue(lastInpMsg);
-    }
+    )
     // OK
     clearExtraContext();
   };
