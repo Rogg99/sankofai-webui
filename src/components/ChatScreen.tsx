@@ -6,6 +6,7 @@ import { classNames, cleanCurrentUrl, throttle } from '../utils/misc';
 import CanvasPyInterpreter from './CanvasPyInterpreter';
 import StorageUtils from '../utils/storage';
 import { useVSCodeContext } from '../utils/llama-vscode';
+import ChatFirstMessage from './ChatFirstMessage';
 // import { Send, StopCircle } from 'lucide-react';
 
 /**
@@ -118,6 +119,13 @@ export default function ChatScreen() {
   const pendingMsg: PendingMessage | undefined =
     pendingMessages[currConvId ?? ''];
 
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    console.log('ChatScreen mounted')
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     // reset to latest node when conversation changes
     setCurrNodeId(-1);
@@ -182,6 +190,7 @@ export default function ChatScreen() {
     // OK
     clearExtraContext();
   };
+  
 
   const handleEditMessage = async (msg: Message, content: string) => {
     if (!viewingChat) return;
@@ -245,11 +254,12 @@ export default function ChatScreen() {
   // ask the model to generate the first message on page loaded or refreshed
   // this is a workaround to avoid the model to generate the first message when the page is refreshed
 
+
   useEffect(() => {
-    if (messages.length === 0 && !isGenerating(currConvId ?? '')) {
+    if (isMounted && messages.length === 0) {
       sendFisrtMessage();
     }
-  }, []);
+  }, [isMounted,currConvId]);
 
   // due to some timing issues of StorageUtils.appendMsg(), we need to make sure the pendingMsg is not duplicated upon rendering (i.e. appears once in the saved conversation and once in the pendingMsg)
   const pendingMsgDisplay: MessageDisplay[] =
@@ -285,16 +295,23 @@ export default function ChatScreen() {
             {/* placeholder to shift the message to the bottom */}
             {viewingChat ? '' : 'Envoyez un message pour commencer...'}
           </div>
-          {[...messages, ...pendingMsgDisplay].map((msg) => (
-            <ChatMessage
-              key={msg.msg.id}
-              msg={msg.msg}
-              siblingLeafNodeIds={msg.siblingLeafNodeIds}
-              siblingCurrIdx={msg.siblingCurrIdx}
-              onRegenerateMessage={handleRegenerateMessage}
-              onEditMessage={handleEditMessage}
-              onChangeSibling={setCurrNodeId}
-            />
+          {[...messages, ...pendingMsgDisplay].slice(1).map((msg) => (
+            // msg.msg.id === messages[1].msg.id ? 
+            //   <ChatFirstMessage
+            //     key={msg.msg.id}
+            //     msg={msg.msg}
+            //     siblingLeafNodeIds={msg.siblingLeafNodeIds}
+            //     siblingCurrIdx={msg.siblingCurrIdx}
+            //   /> : 
+              <ChatMessage
+                key={msg.msg.id}
+                msg={msg.msg}
+                siblingLeafNodeIds={msg.siblingLeafNodeIds}
+                siblingCurrIdx={msg.siblingCurrIdx}
+                onRegenerateMessage={handleRegenerateMessage}
+                onEditMessage={handleEditMessage}
+                onChangeSibling={setCurrNodeId}
+              />
           ))}
         </div>
 
@@ -315,7 +332,7 @@ export default function ChatScreen() {
                       onClick={() => handleFileRemove(index)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
-                        <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
                       </svg>
 
                     </button>
@@ -327,7 +344,7 @@ export default function ChatScreen() {
           <div className='max-w-10xl w-full flex items-center gap-2 '>
             <label className="inline-flex justify-center p-2 text-gray-500 rounded-lg cursor-pointer hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="size-6">
-                  <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                  <path fillRule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
                 </svg>
                 
                 <input type="file" className="hidden" multiple onChange={handleFileChange} />
@@ -362,7 +379,7 @@ export default function ChatScreen() {
                 onClick={() => stopGenerating(currConvId ?? '')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24" className="size-6">
-                  <path fill-rule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z" clip-rule="evenodd" />
+                  <path fillRule="evenodd" d="M4.5 7.5a3 3 0 0 1 3-3h9a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3h-9a3 3 0 0 1-3-3v-9Z" clipRule="evenodd" />
                 </svg>
 
               </button>

@@ -152,11 +152,11 @@ export const AppContextProvider = ({
         if (response.ok) {
           var responseJson = response.json();
           responseJson.then((data) => {
-            console.log('Fetched patient data:', data); // Debug log
+            // console.log('Fetched patient data:', data); // Debug log
             patientData = JSON.stringify(data.data, null, 2);
-            console.log('Patient data:', patientData); // Debug log
+            // console.log('Patient data:', patientData); // Debug log
 
-            console.log('Fetched doctor data:', data); // Debug log
+            // console.log('Fetched doctor data:', data); // Debug log
             doctorName = data.specialist.name;
             doctorSpeciality = data.specialist.speciality;
 
@@ -262,7 +262,7 @@ export const AppContextProvider = ({
       config.systemMessage = dynamicSystemMessage;
       saveConfig(config);
 
-      console.log('Dynamic system message:', dynamicSystemMessage); // Debug log
+      // console.log('Dynamic system message:', dynamicSystemMessage); // Debug log
       // prepare messages for API
       let messages: APIMessage[] = [
         ...(dynamicSystemMessage.length === 0
@@ -306,7 +306,7 @@ export const AppContextProvider = ({
 
       // send request
       // const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
-      const fetchResponse = await fetch(`http://161.97.165.193:9870/v1/chat/completions`, {
+      const fetchResponse = await fetch(`http://161.97.165.193:51912/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -413,6 +413,7 @@ export const AppContextProvider = ({
     }
     return false;
   };
+
 
   const stopGenerating = (convId: string) => {
     setPending(convId, null);
