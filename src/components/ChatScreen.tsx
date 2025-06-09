@@ -6,7 +6,6 @@ import { classNames, cleanCurrentUrl, throttle } from '../utils/misc';
 import CanvasPyInterpreter from './CanvasPyInterpreter';
 import StorageUtils from '../utils/storage';
 import { useVSCodeContext } from '../utils/llama-vscode';
-import ChatFirstMessage from './ChatFirstMessage';
 // import { Send, StopCircle } from 'lucide-react';
 
 /**
@@ -100,9 +99,12 @@ export default function ChatScreen() {
     pendingMessages,
     canvasData,
     replaceMessageAndGenerate,
+    loadPatientDatas,
   } = useAppContext();
   const textarea = useOptimizedTextarea(prefilledMsg.content());
 
+  const loadedPatientData  = localStorage.getItem('loaded-patient-data');
+  
   const { extraContext, clearExtraContext } = useVSCodeContext(textarea);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   // TODO: improve this when we have "upload file" feature
@@ -256,10 +258,10 @@ export default function ChatScreen() {
 
 
   useEffect(() => {
-    if (isMounted && messages.length === 0) {
+    if (isMounted && loadPatientDatas && messages.length === 0) {
       sendFisrtMessage();
     }
-  }, [isMounted,currConvId]);
+  }, [isMounted,currConvId,loadPatientDatas]);
 
   // due to some timing issues of StorageUtils.appendMsg(), we need to make sure the pendingMsg is not duplicated upon rendering (i.e. appears once in the saved conversation and once in the pendingMsg)
   const pendingMsgDisplay: MessageDisplay[] =
@@ -295,24 +297,31 @@ export default function ChatScreen() {
             {/* placeholder to shift the message to the bottom */}
             {viewingChat ? '' : 'Envoyez un message pour commencer...'}
           </div>
-          {[...messages, ...pendingMsgDisplay].slice(1).map((msg) => (
-            // msg.msg.id === messages[1].msg.id ? 
-            //   <ChatFirstMessage
-            //     key={msg.msg.id}
-            //     msg={msg.msg}
-            //     siblingLeafNodeIds={msg.siblingLeafNodeIds}
-            //     siblingCurrIdx={msg.siblingCurrIdx}
-            //   /> : 
-              <ChatMessage
-                key={msg.msg.id}
-                msg={msg.msg}
-                siblingLeafNodeIds={msg.siblingLeafNodeIds}
-                siblingCurrIdx={msg.siblingCurrIdx}
-                onRegenerateMessage={handleRegenerateMessage}
-                onEditMessage={handleEditMessage}
-                onChangeSibling={setCurrNodeId}
-              />
-          ))}
+          {
+            (loadedPatientData === 'true')
+              ? [...messages, ...pendingMsgDisplay].slice(1).map((msg) => (
+                <ChatMessage
+                    key={msg.msg.id}
+                    msg={msg.msg}
+                    siblingLeafNodeIds={msg.siblingLeafNodeIds}
+                    siblingCurrIdx={msg.siblingCurrIdx}
+                    onRegenerateMessage={handleRegenerateMessage}
+                    onEditMessage={handleEditMessage}
+                    onChangeSibling={setCurrNodeId}
+                  />
+                )):
+              [...messages, ...pendingMsgDisplay].map((msg) => (
+                <ChatMessage
+                  key={msg.msg.id}
+                  msg={msg.msg}
+                  siblingLeafNodeIds={msg.siblingLeafNodeIds}
+                  siblingCurrIdx={msg.siblingCurrIdx}
+                  onRegenerateMessage={handleRegenerateMessage}
+                  onEditMessage={handleEditMessage}
+                  onChangeSibling={setCurrNodeId}
+                />
+              ))
+            }
         </div>
 
         {/* chat input */}

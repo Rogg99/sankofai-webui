@@ -1,4 +1,3 @@
-import daisyuiThemes from 'daisyui/src/theming/themes';
 import { isNumeric } from './utils/misc';
 
 export const isDev = import.meta.env.MODE === 'development';

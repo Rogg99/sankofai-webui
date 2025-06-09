@@ -13,7 +13,7 @@ import {
   normalizeMsgsForAPI,
   getSSEStreamAsync,
 } from './misc';
-import { BASE_URL, CONFIG_DEFAULT, isDev } from '../Config';
+import { BASE_URL,CONFIG_DEFAULT, isDev } from '../Config';
 import { matchPath, useLocation, useNavigate } from 'react-router';
 
 interface AppContextValue {
@@ -45,6 +45,7 @@ interface AppContextValue {
   config: typeof CONFIG_DEFAULT;
   saveConfig: (config: typeof CONFIG_DEFAULT) => void;
   showSettings: boolean;
+  loadPatientDatas: boolean;
   setShowSettings: (show: boolean) => void;
 }
 
@@ -87,6 +88,7 @@ export const AppContextProvider = ({
   const [showSettings, setShowSettings] = useState(false);
 
   const [initPatientDatas, setInitPatientDatas] = useState(false);
+  const [loadPatientDatas, setloadPatientDatas] = useState(false);
 
   const searchParams = new URLSearchParams(window.location.search);
   const patientId  = searchParams.get("patient");
@@ -123,15 +125,11 @@ export const AppContextProvider = ({
     };
   }, [convId]);
 
-  useEffect(() => {
-
-    // console.log("patientId:", patientId); // "summary"
-    if (!initPatientDatas) {
-    // Fetch patient data from the API
-      console.log('Fetching patient data...'); // Debug log
+  // function to initialize patient data
+  const loadPatientsData = (secrets:String) => {
       var patientData = '';
       var doctorName = '';
-      var doctorSpeciality = 'generalist';
+      // var doctorSpeciality = 'généraliste';
       
       const systemMessage_core = "Vous êtes Sankof, un assistant médical expert interactif. Suivez rigoureusement ces instructions :"
       + "\n- Résumez les informations du patient fournies ci-dessous."
@@ -141,27 +139,37 @@ export const AppContextProvider = ({
       + "\n- Répondez uniquement en français."
       + "\n\n- #################### \n";
 
-      var doctor_core = 
-        "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
-      + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
-      + "\n\n- #################### \n";
-
-      var systemMessage = CONFIG_DEFAULT.systemMessage; 
-
-      fetch('http://161.97.165.193:19000/api/data/'+patientId).then((response) => {
+      fetch(`http://161.97.165.193:8005/api/patient-summary/${patientId}/from/${doctorId}/`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${secrets}`, // Use the token from localStorage
+          },
+        }
+      ).then((response) => {
         if (response.ok) {
           var responseJson = response.json();
           responseJson.then((data) => {
             // console.log('Fetched patient data:', data); // Debug log
-            patientData = JSON.stringify(data.data, null, 2);
-            // console.log('Patient data:', patientData); // Debug log
+            
+            patientData = 
+                  "\n- Informations du patient:\n"
+                  + "\n- Nom: " + data.patient_info.name
+                  + "\n- Âge: " + data.patient_info.age
+                  + "\n- Sexe: " + data.patient_info.sex
+                  + "\n- Allergies: " + JSON.stringify(data.allergies, null, 2)
+                  + "\n- Parametres vitaux: " + JSON.stringify(data.vitals_biometrics.vitals, null, 2)
+                  + "\n- Parametres biometriques: " + JSON.stringify(data.vitals_biometrics.biometrics, null, 2)
+                  + "\n- Historique Medical: " + JSON.stringify(data.latest_encounter, null, 2);
+
 
             // console.log('Fetched doctor data:', data); // Debug log
-            doctorName = data.specialist.name;
-            doctorSpeciality = data.specialist.speciality;
+            doctorName = data.requested_by.full_name;
+            // doctorSpeciality = data.requested_by.role;
 
             var doctor_core = 
-                  "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
+                  "\n- Votre interlocuteur est un médecin nommé " + doctorName + "."
                   + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
                   + "\n\n- #################### \n";
 
@@ -175,15 +183,82 @@ export const AppContextProvider = ({
             //config.systemMessage = dynamicSystemMessage;
             saveConfig(config);
             setConfig(config);
+            setloadPatientDatas(true);
+            localStorage.setItem('loaded-patient-data', 'true');
             
           });
         }
         else {
+          setloadPatientDatas(false);
+          localStorage.setItem('loaded-patient-data', 'false');
           console.error('Error fetching patient data:', response.statusText);
         }
       });
+
+  }
+
+  useEffect(() => {
+
+    // console.log("patientId:", patientId); // "summary"
+    if (!initPatientDatas) {
+    // Fetch patient data from the API
+      console.log('Fetching patient data...'); // Debug log
+
+      // var doctor_core = 
+      //   "\n- Votre interlocuteur est un médecin " + doctorSpeciality + " nommé " + doctorName + "."
+      // + "\n- Il est important de lui poser des questions pour obtenir des informations supplémentaires sur l'état du patient."
+      // + "\n\n- #################### \n";
+
+      // var systemMessage = CONFIG_DEFAULT.systemMessage; 
+
+      if (patientId!=='' && doctorId!=='' && patientId!==null && doctorId!==null) {
+        // load secret from localStorage
+        const secret = localStorage.getItem('secret');
+        const secret_time = localStorage.getItem('secret-time');
+
+        //login first
+        if (secret === null || secret_time === null || (Date.now() - parseInt(secret_time || '0')) > 3600000* 24) { // 24 hours
+          fetch(`http://161.97.165.193:8005/api/login/`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json', },
+              body: JSON.stringify({
+                email: 'sankofaibot@admin.com',
+                password: '12345678#$%%%%',
+              }),
+            }).then((response) => {
+              if (response.ok) {
+                console.log('Login successful'); // Debug log
+                var responseJson = response.json();
+                responseJson.then((data) => {
+                  // console.log('Login response data:', data); // Debug log
+                  if (data && data.access) {
+                    // Save the token in localStorage or wherever you need it
+                    localStorage.setItem('secret', data.access);
+                    localStorage.setItem('secret-time', Date.now().toString());
+                    loadPatientsData(data.access);
+                    setInitPatientDatas(true);
+                    console.log('Token saved successfully'); // Debug log
+                  } else {
+                    console.error('No token received from login response');
+                  }
+                });
+              }
+            }
+          );
+        }
+        else {
+          // console.log('Secret found in localStorage:', secret); // Debug log
+          loadPatientsData(secret);
+          setInitPatientDatas(true);
+        }
+      }
+      else {
+        setInitPatientDatas(true);
+        setloadPatientDatas(false);
+        console.log('Patient ID or Doctor ID is not provided, skipping patient data initialization');
+      }
     }
-  },[initPatientDatas])
+  },[initPatientDatas,loadPatientDatas])
 
   const setPending = (convId: string, pendingMsg: PendingMessage | null) => {
     // if pendingMsg is null, remove the key from the object
@@ -305,8 +380,8 @@ export const AppContextProvider = ({
       };
 
       // send request
-      // const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
-      const fetchResponse = await fetch(`http://161.97.165.193:51912/v1/chat/completions`, {
+      const fetchResponse = await fetch(`${BASE_URL}/v1/chat/completions`, {
+      // const fetchResponse = await fetch(`http://161.97.165.193:51912/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -468,6 +543,7 @@ export const AppContextProvider = ({
         config,
         saveConfig,
         showSettings,
+        loadPatientDatas,
         setShowSettings,
       }}
     >
